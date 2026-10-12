@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/romboooo/depcatcher/internal/elfscan"
+	"github.com/romboooo/depcatcher/internal/resolver"
 	"github.com/spf13/cobra"
 )
 
@@ -27,29 +28,47 @@ func newInspectCmd() *cobra.Command {
 
 func inspectElfFile(path string) error {
 	res, err := elfscan.Inspect(path)
-
-	libs := res.Libraries
-	runPaths := res.RunPath
-	rPaths := res.RPath
 	if err != nil {
 		return err
 	}
+
+	searchEntries := res.RunPath
+	if len(searchEntries) == 0 {
+		searchEntries = res.RPath
+	}
+
+	paths, err := resolver.ExpandPaths(path, searchEntries)
+	if err != nil {
+		return err
+	}
+
+	writeResult(res, paths)
+
+	return nil
+}
+
+func writeResult(res elfscan.Result, paths []string) {
 	fmt.Println("libs:")
-	for i := range libs {
-		fmt.Printf("  %s\n", libs[i])
+	for _, lib := range res.Libraries {
+		fmt.Printf("  %s\n", lib)
 	}
 
 	fmt.Printf("architecture: %s\n", res.Machine)
 	fmt.Printf("class: %s\n", res.Class)
 	fmt.Printf("interpreter:%s\n", res.Interpreter)
+
 	fmt.Println("runpaths:")
-	for i := range runPaths {
-		fmt.Printf("  %s\n", runPaths[i])
-	}
-	fmt.Println("rPaths:")
-	for i := range rPaths {
-		fmt.Printf("  %s\n", rPaths[i])
+	for _, rp := range res.RunPath {
+		fmt.Printf("  %s\n", rp)
 	}
 
-	return nil
+	fmt.Println("rPaths:")
+	for _, rp := range res.RPath {
+		fmt.Printf("  %s\n", rp)
+	}
+
+	fmt.Println("expanded paths:")
+	for _, p := range paths {
+		fmt.Printf("  %s\n", p)
+	}
 }
