@@ -29,6 +29,8 @@ func inspectElfFile(path string) error {
 	res, err := elfscan.Inspect(path)
 
 	libs := res.Libraries
+	runPaths := res.RunPath
+	rPaths := res.RPath
 	if err != nil {
 		return err
 	}
@@ -40,5 +42,14 @@ func inspectElfFile(path string) error {
 	fmt.Printf("architecture: %s\n", res.Machine)
 	fmt.Printf("class: %s\n", res.Class)
 	fmt.Printf("interpreter:%s\n", res.Interpreter)
+	fmt.Println("runpaths:")
+	for i := range runPaths {
+		fmt.Printf("  %s\n", runPaths[i])
+	}
+	fmt.Println("rPaths:")
+	for i := range rPaths {
+		fmt.Printf("  %s\n", rPaths[i])
+	}
+
 	return nil
 }

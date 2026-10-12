@@ -12,6 +12,8 @@ type Result struct {
 	Class       elf.Class
 	Libraries   []string
 	Interpreter string
+	RunPath     []string
+	RPath       []string
 }
 
 func Inspect(path string) (Result, error) {
@@ -26,6 +28,16 @@ func Inspect(path string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	runPaths, err := file.DynString(elf.DT_RUNPATH)
+
+	if err != nil {
+		return Result{}, fmt.Errorf("read RUNPATH of %q: %w", path, err)
+	}
+
+	rPaths, err := file.DynString(elf.DT_RPATH)
+	if err != nil {
+		return Result{}, fmt.Errorf("read RPATH of %q: %w", path, err)
+	}
 	libs, err := file.ImportedLibraries()
 	if err != nil {
 		return Result{}, fmt.Errorf("read dependencies of %q: %w", path, err)
@@ -36,6 +48,8 @@ func Inspect(path string) (Result, error) {
 		Class:       file.Class,
 		Libraries:   libs,
 		Interpreter: interpreter,
+		RunPath:     runPaths,
+		RPath:       rPaths,
 	}, nil
 }
 
