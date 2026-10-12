@@ -41,13 +41,22 @@ func inspectElfFile(path string) error {
 	if err != nil {
 		return err
 	}
+	paths = append(paths, "/usr/lib")
+	resolved := make(map[string]string, len(res.Libraries))
+	for _, lib := range res.Libraries {
+		found, err := resolver.FindLibrary(lib, paths)
+		if err != nil {
+			return err
+		}
+		resolved[lib] = found
+	}
 
-	writeResult(res, paths)
+	writeResult(res, paths, resolved)
 
 	return nil
 }
 
-func writeResult(res elfscan.Result, paths []string) {
+func writeResult(res elfscan.Result, paths []string, resolved map[string]string) {
 	fmt.Println("libs:")
 	for _, lib := range res.Libraries {
 		fmt.Printf("  %s\n", lib)
@@ -70,5 +79,14 @@ func writeResult(res elfscan.Result, paths []string) {
 	fmt.Println("expanded paths:")
 	for _, p := range paths {
 		fmt.Printf("  %s\n", p)
+	}
+
+	fmt.Println("resolved libraries:")
+	for _, lib := range res.Libraries {
+		found := resolved[lib]
+		if found == "" {
+			found = "not found"
+		}
+		fmt.Printf("  %s: %s\n", lib, found)
 	}
 }
